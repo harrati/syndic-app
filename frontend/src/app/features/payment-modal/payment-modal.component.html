@@ -1,0 +1,198 @@
+<div
+  class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 sm:items-center sm:p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="payment-title"
+  (click)="close()"
+>
+  <div
+    class="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl"
+    (click)="$event.stopPropagation()"
+  >
+    @if (receipt(); as result) {
+      <div class="text-center">
+        <div class="mx-auto grid size-12 place-items-center rounded-full bg-brand-50 text-brand-700">
+          <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
+          </svg>
+        </div>
+        <h2 class="mt-3 text-lg font-semibold text-slate-900">Encaissement enregistré</h2>
+        <p class="mt-1 text-xs text-slate-500">
+          Reçu <span class="font-mono font-semibold text-slate-700">{{ result.payment.receipt_number }}</span>
+        </p>
+
+        <p class="mt-4 text-3xl font-bold tracking-tight text-slate-900">
+          {{ result.payment.amount_received | mad }}
+        </p>
+
+        <dl class="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-sm">
+          <div class="flex items-center justify-between gap-3 py-2">
+            <dt class="text-slate-500">Appartement</dt>
+            <dd class="text-right font-medium text-slate-900">{{ apartmentLabel(result.payment.apartment_id) }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-3 py-2">
+            <dt class="text-slate-500">Date</dt>
+            <dd class="font-medium text-slate-900">{{ result.payment.payment_date | date: 'dd/MM/yyyy' }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-3 py-2">
+            <dt class="text-slate-500">Mode</dt>
+            <dd class="font-medium text-slate-900">{{ result.payment.payment_method }}</dd>
+          </div>
+          @if (result.payment.reference_number) {
+            <div class="flex items-center justify-between gap-3 py-2">
+              <dt class="text-slate-500">Référence</dt>
+              <dd class="font-medium text-slate-900">{{ result.payment.reference_number }}</dd>
+            </div>
+          }
+        </dl>
+
+        @if (result.allocations.length > 0) {
+          <div class="mt-4 text-left">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Imputation FIFO</p>
+            <ul class="mt-1.5 space-y-1 text-sm">
+              @for (allocation of result.allocations; track allocation.charge_id) {
+                <li class="flex items-center justify-between gap-3">
+                  <span class="text-slate-600">
+                    {{ allocation.period_month | number: '2.0-0' }}/{{ allocation.period_year }}
+                  </span>
+                  <span class="font-medium text-slate-900">{{ allocation.amount_allocated | mad }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (+result.unallocated_credit > 0) {
+          <p class="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            Crédit en avance : {{ result.unallocated_credit | mad }} — il sera imputé aux prochaines charges.
+          </p>
+        }
+
+        <div class="mt-5 flex gap-2">
+          <button
+            type="button"
+            (click)="startAnother()"
+            class="min-h-[44px] flex-1 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700"
+          >
+            Nouveau
+          </button>
+          <button
+            type="button"
+            (click)="close()"
+            class="min-h-[44px] flex-1 rounded-xl bg-brand-600 text-sm font-semibold text-white"
+          >
+            Fermer
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 id="payment-title" class="text-lg font-semibold text-slate-900">Encaissement</h2>
+          <p class="text-xs text-slate-500">Enregistrer un paiement de charge</p>
+        </div>
+        <button
+          type="button"
+          class="grid size-11 place-items-center rounded-full text-xl leading-none text-slate-400 hover:bg-slate-100"
+          aria-label="Fermer"
+          (click)="close()"
+        >
+          ×
+        </button>
+      </div>
+
+      <form class="mt-4 space-y-3" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div>
+          <label for="payment-apartment" class="mb-1.5 block text-sm font-medium text-slate-700">Appartement</label>
+
+          @if (loadingApartments()) {
+            <div class="h-[44px] animate-pulse rounded-xl bg-slate-200" aria-hidden="true"></div>
+          } @else if (loadError(); as message) {
+            <p class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ message }}</p>
+          } @else if (options().length === 0) {
+            <p class="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              Aucun appartement enregistré. Ajoutez-en depuis l’onglet Copropriété.
+            </p>
+          } @else {
+            <select
+              id="payment-apartment"
+              formControlName="apartment_id"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            >
+              @for (option of options(); track option.apartment.apartment_id) {
+                <option [value]="option.apartment.apartment_id">{{ optionLabel(option) }}</option>
+              }
+            </select>
+          }
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="amount_received" class="mb-1.5 block text-sm font-medium text-slate-700">Montant (DH)</label>
+            <input
+              id="amount_received"
+              type="text"
+              inputmode="decimal"
+              formControlName="amount_received"
+              placeholder="450.00"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            />
+            @if (submitted() && form.controls.amount_received.invalid) {
+              <p class="mt-1 text-xs text-red-600">Montant invalide.</p>
+            }
+          </div>
+          <div>
+            <label for="payment_date" class="mb-1.5 block text-sm font-medium text-slate-700">Date</label>
+            <input
+              id="payment_date"
+              type="date"
+              formControlName="payment_date"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            />
+            @if (submitted() && form.controls.payment_date.invalid) {
+              <p class="mt-1 text-xs text-red-600">Date requise.</p>
+            }
+          </div>
+        </div>
+
+        <div>
+          <label for="payment_method" class="mb-1.5 block text-sm font-medium text-slate-700">Mode de paiement</label>
+          <select
+            id="payment_method"
+            formControlName="payment_method"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          >
+            @for (method of methods; track method) {
+              <option [value]="method">{{ method }}</option>
+            }
+          </select>
+        </div>
+
+        <div>
+          <label for="reference_number" class="mb-1.5 block text-sm font-medium text-slate-700">
+            Référence <span class="font-normal text-slate-400">(facultatif)</span>
+          </label>
+          <input
+            id="reference_number"
+            type="text"
+            formControlName="reference_number"
+            placeholder="N° chèque, virement…"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          />
+        </div>
+
+        @if (formError(); as message) {
+          <p class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ message }}</p>
+        }
+
+        <button
+          type="submit"
+          [disabled]="saving() || loadingApartments() || options().length === 0"
+          class="min-h-[44px] w-full rounded-xl bg-brand-600 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 disabled:opacity-60"
+        >
+          {{ saving() ? 'Enregistrement…' : 'Valider l’encaissement' }}
+        </button>
+      </form>
+    }
+  </div>
+</div>

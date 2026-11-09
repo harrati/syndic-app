@@ -1,0 +1,82 @@
+
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Angular dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Angular
+        working-directory: frontend
+        run: npm run build -- --configuration production
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+
+      - name: Validate PHP syntax
+        run: |
+          find backend -name "*.php" -print0 |
+            xargs -0 -r -n1 php -l
+
+      - name: Prepare production package
+        run: |
+          set -e
+
+          rm -rf deploy
+          mkdir -p deploy/api
+
+          # Locate Angular production output
+          OUTPUT_DIR=$(find frontend/dist \
+            -type f -name index.html \
+            -printf '%h\n' | head -n 1)
+
+          if [ -z "$OUTPUT_DIR" ]; then
+            echo "Angular build output not found"
+            exit 1
+          fi
+
+          cp -a "$OUTPUT_DIR/." deploy/
+
+          # Copy PHP backend, excluding local secrets
+          rsync -a backend/ deploy/api/ \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='config/local.php' \
+            --exclude='config/production.php' \
+            --exclude='node_modules/' \
+            --exclude='.git/'
+
+          # Add production Apache configuration
+          cp deployment/.htaccess deploy/.htaccess
+
+      - name: Publish production files
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: hostinger-production
+          publish_dir: ./deploy
+          force_orphan: true

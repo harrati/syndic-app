@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.angular/
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+backend/config/secrets.php
+
+# Hosting upload package (generated)
+deploy/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Freebuff internal
+.freebuff/
+.cloud-attachments/
+
+
+# Dependencies
+node_modules/
+vendor/
+
+# Angular output
+frontend/dist/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Production secrets
+backend/config/local.php
+backend/config/production.php
+
+# Logs
+*.log
+
+# Local database dumps
+*.sql
+*.sql.gz
+
+# Docker volumes
+mysql_data/

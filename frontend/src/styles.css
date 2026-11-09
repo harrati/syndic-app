@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+/* Design tokens: brand palette + typography. Utilities such as `bg-brand-600`,
+   `text-brand-700` and `font-sans` are generated from these values. */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-brand-50: oklch(0.97 0.02 166);
+  --color-brand-100: oklch(0.94 0.04 166);
+  --color-brand-200: oklch(0.89 0.07 166);
+  --color-brand-500: oklch(0.7 0.14 166);
+  --color-brand-600: oklch(0.6 0.13 166);
+  --color-brand-700: oklch(0.5 0.11 166);
+
+  --radius-card: 1rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-100 font-sans text-slate-900 antialiased;
+  }
+
+  /* Touch-first: never let iOS enlarge text on focus, and drop the grey tap flash. */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

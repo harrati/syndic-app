@@ -1,0 +1,84 @@
+<div class="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-slate-100">
+  @if (showChrome()) {
+    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div class="flex items-center gap-3 px-4 py-3">
+        <div
+          class="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-600 text-sm font-bold text-white"
+          aria-hidden="true"
+        >
+          {{ userInitials() }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-700">SyndicApp</p>
+          <h1 class="truncate text-base font-semibold text-slate-900">{{ residence() }}</h1>
+        </div>
+        <button
+          type="button"
+          (click)="logout()"
+          class="grid size-11 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 active:bg-slate-200"
+          aria-label="Se déconnecter"
+        >
+          <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h9"
+            />
+          </svg>
+        </button>
+      </div>
+    </header>
+  }
+
+  <main class="w-full flex-1 px-4 pt-4" [class.pb-28]="showChrome()" [class.pb-6]="!showChrome()">
+    <router-outlet />
+  </main>
+
+  @if (showChrome()) {
+    <nav
+      class="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur"
+      aria-label="Navigation principale"
+    >
+      <div
+        class="mx-auto flex max-w-md items-stretch gap-1 px-2 pt-1 pb-[calc(env(safe-area-inset-bottom)+0.25rem)]"
+      >
+        @for (item of navItems; track item.label) {
+          @if (item.link) {
+            <a
+              [routerLink]="item.link"
+              class="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-[11px] font-medium transition-colors"
+              [class.bg-brand-50]="isActive(item)"
+              [class.text-brand-700]="isActive(item)"
+              [class.text-slate-500]="!isActive(item)"
+              [attr.aria-current]="isActive(item) ? 'page' : null"
+            >
+              <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="item.icon" />
+              </svg>
+              <span>{{ item.label }}</span>
+            </a>
+          } @else {
+            <button
+              type="button"
+              (click)="handleAction(item.action)"
+              class="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-[11px] font-medium text-slate-500 transition-colors hover:bg-slate-100 active:bg-slate-200"
+            >
+              <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="item.icon" />
+              </svg>
+              <span>{{ item.label }}</span>
+            </button>
+          }
+        }
+      </div>
+    </nav>
+  }
+
+  @if (ui.paymentOpen()) {
+    <app-payment-modal (closed)="ui.closePayment()" />
+  }
+
+  @if (ui.expenseOpen()) {
+    <app-expense-modal (closed)="ui.closeExpense()" />
+  }
+</div>

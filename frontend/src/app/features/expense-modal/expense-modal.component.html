@@ -1,0 +1,199 @@
+<div
+  class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 sm:items-center sm:p-4"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="expense-title"
+  (click)="close()"
+>
+  <div
+    class="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl"
+    (click)="$event.stopPropagation()"
+  >
+    @if (saved(); as expense) {
+      <div class="text-center">
+        <div class="mx-auto grid size-12 place-items-center rounded-full bg-brand-50 text-brand-700">
+          <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
+          </svg>
+        </div>
+        <h2 class="mt-3 text-lg font-semibold text-slate-900">Dépense enregistrée</h2>
+        <p class="mt-1 text-sm text-slate-500">{{ expense.category_name }}</p>
+
+        <p class="mt-4 text-3xl font-bold tracking-tight text-slate-900">{{ expense.amount | mad }}</p>
+
+        <dl class="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-slate-50 px-3 text-left text-sm">
+          <div class="flex items-center justify-between gap-3 py-2">
+            <dt class="text-slate-500">Bénéficiaire</dt>
+            <dd class="text-right font-medium text-slate-900">{{ expense.supplier_or_payee }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-3 py-2">
+            <dt class="text-slate-500">Date</dt>
+            <dd class="font-medium text-slate-900">{{ expense.expense_date | date: 'dd/MM/yyyy' }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-3 py-2">
+            <dt class="text-slate-500">Mode</dt>
+            <dd class="font-medium text-slate-900">{{ expense.payment_method }}</dd>
+          </div>
+          @if (expense.reference_number) {
+            <div class="flex items-center justify-between gap-3 py-2">
+              <dt class="text-slate-500">Référence</dt>
+              <dd class="font-medium text-slate-900">{{ expense.reference_number }}</dd>
+            </div>
+          }
+        </dl>
+
+        <div class="mt-5 flex gap-2">
+          <button
+            type="button"
+            (click)="startAnother()"
+            class="min-h-[44px] flex-1 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700"
+          >
+            Nouvelle
+          </button>
+          <button
+            type="button"
+            (click)="close()"
+            class="min-h-[44px] flex-1 rounded-xl bg-brand-600 text-sm font-semibold text-white"
+          >
+            Fermer
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 id="expense-title" class="text-lg font-semibold text-slate-900">Saisir une dépense</h2>
+          <p class="text-xs text-slate-500">Charge payée par le syndic</p>
+        </div>
+        <button
+          type="button"
+          class="grid size-11 place-items-center rounded-full text-xl leading-none text-slate-400 hover:bg-slate-100"
+          aria-label="Fermer"
+          (click)="close()"
+        >
+          ×
+        </button>
+      </div>
+
+      <form class="mt-4 space-y-3" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="expense_date" class="mb-1.5 block text-sm font-medium text-slate-700">Date</label>
+            <input
+              id="expense_date"
+              type="date"
+              formControlName="expense_date"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            />
+            @if (submitted() && form.controls.expense_date.invalid) {
+              <p class="mt-1 text-xs text-red-600">Date requise.</p>
+            }
+          </div>
+          <div>
+            <label for="amount" class="mb-1.5 block text-sm font-medium text-slate-700">Montant (DH)</label>
+            <input
+              id="amount"
+              type="text"
+              inputmode="decimal"
+              formControlName="amount"
+              placeholder="1 200.00"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            />
+            @if (submitted() && form.controls.amount.invalid) {
+              <p class="mt-1 text-xs text-red-600">Montant invalide.</p>
+            }
+          </div>
+        </div>
+
+        <div>
+          <label for="category_name" class="mb-1.5 block text-sm font-medium text-slate-700">Catégorie</label>
+          <input
+            id="category_name"
+            type="text"
+            formControlName="category_name"
+            list="expense-category-suggestions"
+            placeholder="Ex. Nettoyage"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          />
+          <datalist id="expense-category-suggestions">
+            @for (category of categories; track category) {
+              <option [value]="category"></option>
+            }
+          </datalist>
+          @if (submitted() && form.controls.category_name.invalid) {
+            <p class="mt-1 text-xs text-red-600">Catégorie requise.</p>
+          }
+        </div>
+
+        <div>
+          <label for="supplier_or_payee" class="mb-1.5 block text-sm font-medium text-slate-700">
+            Fournisseur / bénéficiaire
+          </label>
+          <input
+            id="supplier_or_payee"
+            type="text"
+            formControlName="supplier_or_payee"
+            placeholder="Ex. Société ATLAS"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          />
+          @if (submitted() && form.controls.supplier_or_payee.invalid) {
+            <p class="mt-1 text-xs text-red-600">Bénéficiaire requis.</p>
+          }
+        </div>
+
+        <div>
+          <label for="description" class="mb-1.5 block text-sm font-medium text-slate-700">Description</label>
+          <textarea
+            id="description"
+            rows="2"
+            formControlName="description"
+            placeholder="Ex. Nettoyage des parties communes — novembre"
+            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          ></textarea>
+          @if (submitted() && form.controls.description.invalid) {
+            <p class="mt-1 text-xs text-red-600">Description requise.</p>
+          }
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="expense_method" class="mb-1.5 block text-sm font-medium text-slate-700">Mode</label>
+            <select
+              id="expense_method"
+              formControlName="payment_method"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            >
+              @for (method of methods; track method) {
+                <option [value]="method">{{ method }}</option>
+              }
+            </select>
+          </div>
+          <div>
+            <label for="expense_reference" class="mb-1.5 block text-sm font-medium text-slate-700">
+              Référence
+            </label>
+            <input
+              id="expense_reference"
+              type="text"
+              formControlName="reference_number"
+              placeholder="Fac. n°…"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            />
+          </div>
+        </div>
+
+        @if (formError(); as message) {
+          <p class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ message }}</p>
+        }
+
+        <button
+          type="submit"
+          [disabled]="saving()"
+          class="min-h-[44px] w-full rounded-xl bg-brand-600 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 disabled:opacity-60"
+        >
+          {{ saving() ? 'Enregistrement…' : 'Enregistrer la dépense' }}
+        </button>
+      </form>
+    }
+  </div>
+</div>

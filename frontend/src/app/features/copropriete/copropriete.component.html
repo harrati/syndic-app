@@ -1,0 +1,380 @@
+<section class="space-y-4">
+  <div class="flex items-end justify-between gap-2">
+    <div>
+      <h2 class="text-lg font-semibold text-slate-900">Copropriété</h2>
+      <p class="text-xs text-slate-500">
+        {{ totals().buildings }} immeuble(s) · {{ totals().apartments }} appartement(s)
+      </p>
+    </div>
+  </div>
+
+  @if (notice(); as message) {
+    <div class="flex items-start gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-sm text-brand-700">
+      <p class="flex-1">{{ message }}</p>
+      <button
+        type="button"
+        class="grid size-6 shrink-0 place-items-center rounded-full text-brand-700/70 hover:bg-brand-100"
+        aria-label="Masquer le message"
+        (click)="notice.set(null)"
+      >
+        ×
+      </button>
+    </div>
+  }
+
+  <div class="grid grid-cols-2 gap-2">
+    <button
+      type="button"
+      (click)="openBuildingModal()"
+      class="flex min-h-[44px] items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 active:bg-slate-100"
+    >
+      + Immeuble
+    </button>
+    <button
+      type="button"
+      (click)="openApartmentModal()"
+      class="flex min-h-[44px] items-center justify-center rounded-xl bg-brand-600 px-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 active:bg-brand-700"
+    >
+      + Appartement
+    </button>
+  </div>
+
+  <div class="relative">
+    <label for="copropriete-search" class="sr-only">Rechercher</label>
+    <svg
+      class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      stroke-width="2"
+      aria-hidden="true"
+    >
+      <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0" />
+    </svg>
+    <input
+      id="copropriete-search"
+      type="search"
+      [value]="search()"
+      (input)="onSearch($event)"
+      placeholder="Immeuble, appartement, propriétaire…"
+      class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+    />
+  </div>
+
+  @if (errorMessage(); as message) {
+    <div class="rounded-2xl border border-red-200 bg-red-50 p-4" role="alert">
+      <p class="text-sm text-red-700">{{ message }}</p>
+      <button
+        type="button"
+        (click)="reload()"
+        class="mt-3 min-h-[44px] rounded-xl bg-white px-4 text-sm font-medium text-red-700 ring-1 ring-red-200"
+      >
+        Réessayer
+      </button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="space-y-3" aria-hidden="true">
+      <div class="h-28 animate-pulse rounded-2xl bg-slate-200"></div>
+      <div class="h-28 animate-pulse rounded-2xl bg-slate-200"></div>
+    </div>
+  } @else if (filteredBuildings().length === 0 && !errorMessage()) {
+    <p class="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
+      @if (buildings().length === 0) {
+        Aucun immeuble enregistré. Commencez par « + Immeuble ».
+      } @else {
+        Aucun résultat pour « {{ search() }} ».
+      }
+    </p>
+  } @else {
+    @for (building of filteredBuildings(); track building.building_id) {
+      <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-700">
+              {{ building.building_code }}
+            </p>
+            <h3 class="truncate text-sm font-semibold text-slate-900">{{ building.building_name }}</h3>
+            @if (building.address_or_description) {
+              <p class="mt-0.5 truncate text-xs text-slate-500">{{ building.address_or_description }}</p>
+            }
+          </div>
+          <span class="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+            {{ building.apartments.length }} appt.
+          </span>
+        </div>
+
+        <ul class="mt-3 grid grid-cols-2 gap-2">
+          @for (apartment of building.apartments; track apartment.apartment_id) {
+            <li class="min-h-[44px] rounded-xl border border-slate-100 bg-slate-50 p-2.5">
+              <p class="text-sm font-semibold text-slate-900">Appt {{ apartment.apartment_number }}</p>
+              <p class="truncate text-xs text-slate-600">{{ ownerLabel(apartment) }}</p>
+              <p class="mt-1 text-[11px] text-slate-400">
+                Étage {{ apartment.floor }} · {{ apartment.monthly_fee | mad }}
+              </p>
+            </li>
+          }
+        </ul>
+      </article>
+    }
+  }
+</section>
+
+@if (modal() === 'building') {
+  <div
+    class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 sm:items-center sm:p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="building-form-title"
+    (click)="closeModal()"
+  >
+    <div
+      class="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <h2 id="building-form-title" class="text-lg font-semibold text-slate-900">Nouvel immeuble</h2>
+        <button
+          type="button"
+          class="grid size-11 place-items-center rounded-full text-xl leading-none text-slate-400 hover:bg-slate-100"
+          aria-label="Fermer"
+          (click)="closeModal()"
+        >
+          ×
+        </button>
+      </div>
+
+      <form class="mt-4 space-y-3" [formGroup]="buildingForm" (ngSubmit)="submitBuilding()" novalidate>
+        <div>
+          <label for="building_code" class="mb-1.5 block text-sm font-medium text-slate-700">Code</label>
+          <input
+            id="building_code"
+            type="text"
+            formControlName="building_code"
+            placeholder="Ex. A"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          />
+          @if (submitted() && buildingForm.controls.building_code.invalid) {
+            <p class="mt-1 text-xs text-red-600">Code requis (50 caractères max).</p>
+          }
+        </div>
+
+        <div>
+          <label for="building_name" class="mb-1.5 block text-sm font-medium text-slate-700">Nom</label>
+          <input
+            id="building_name"
+            type="text"
+            formControlName="building_name"
+            placeholder="Ex. Bâtiment A"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          />
+          @if (submitted() && buildingForm.controls.building_name.invalid) {
+            <p class="mt-1 text-xs text-red-600">Nom requis (100 caractères max).</p>
+          }
+        </div>
+
+        <div>
+          <label for="address_or_description" class="mb-1.5 block text-sm font-medium text-slate-700">
+            Adresse / description
+          </label>
+          <textarea
+            id="address_or_description"
+            rows="2"
+            formControlName="address_or_description"
+            placeholder="Ex. 12 rue Ibn Sina, Maârif"
+            class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          ></textarea>
+        </div>
+
+        @if (formError(); as message) {
+          <p class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ message }}</p>
+        }
+
+        <div class="flex gap-2 pt-1">
+          <button
+            type="button"
+            (click)="closeModal()"
+            [disabled]="saving()"
+            class="min-h-[44px] flex-1 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 disabled:opacity-60"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            [disabled]="saving()"
+            class="min-h-[44px] flex-1 rounded-xl bg-brand-600 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            {{ saving() ? 'Enregistrement…' : 'Créer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+@if (modal() === 'apartment') {
+  <div
+    class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 sm:items-center sm:p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="apartment-form-title"
+    (click)="closeModal()"
+  >
+    <div
+      class="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="flex items-start justify-between gap-3">
+        <h2 id="apartment-form-title" class="text-lg font-semibold text-slate-900">Nouvel appartement</h2>
+        <button
+          type="button"
+          class="grid size-11 place-items-center rounded-full text-xl leading-none text-slate-400 hover:bg-slate-100"
+          aria-label="Fermer"
+          (click)="closeModal()"
+        >
+          ×
+        </button>
+      </div>
+
+      <form class="mt-4 space-y-3" [formGroup]="apartmentForm" (ngSubmit)="submitApartment()" novalidate>
+        <div>
+          <label for="building_id" class="mb-1.5 block text-sm font-medium text-slate-700">Immeuble</label>
+          <select
+            id="building_id"
+            formControlName="building_id"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          >
+            @for (building of buildings(); track building.building_id) {
+              <option [value]="building.building_id">
+                {{ building.building_code }} — {{ building.building_name }}
+              </option>
+            }
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="apartment_number" class="mb-1.5 block text-sm font-medium text-slate-700">N° appartement</label>
+            <input
+              id="apartment_number"
+              type="text"
+              formControlName="apartment_number"
+              placeholder="Ex. 12"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            />
+            @if (submitted() && apartmentForm.controls.apartment_number.invalid) {
+              <p class="mt-1 text-xs text-red-600">Numéro requis.</p>
+            }
+          </div>
+
+          <div>
+            <label for="floor" class="mb-1.5 block text-sm font-medium text-slate-700">Étage</label>
+            <input
+              id="floor"
+              type="number"
+              inputmode="numeric"
+              formControlName="floor"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            />
+            @if (submitted() && apartmentForm.controls.floor.invalid) {
+              <p class="mt-1 text-xs text-red-600">Étage invalide.</p>
+            }
+          </div>
+        </div>
+
+        <div>
+          <label for="owner_name" class="mb-1.5 block text-sm font-medium text-slate-700">Propriétaire</label>
+          <input
+            id="owner_name"
+            type="text"
+            formControlName="owner_name"
+            placeholder="Nom complet"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          />
+          @if (submitted() && apartmentForm.controls.owner_name.invalid) {
+            <p class="mt-1 text-xs text-red-600">Propriétaire requis (100 caractères max).</p>
+          }
+        </div>
+
+        <div>
+          <label for="resident_name" class="mb-1.5 block text-sm font-medium text-slate-700">
+            Locataire <span class="font-normal text-slate-400">(facultatif)</span>
+          </label>
+          <input
+            id="resident_name"
+            type="text"
+            formControlName="resident_name"
+            placeholder="Nom complet"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="phone" class="mb-1.5 block text-sm font-medium text-slate-700">Téléphone</label>
+            <input
+              id="phone"
+              type="tel"
+              formControlName="phone"
+              placeholder="06 12 34 56 78"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            />
+          </div>
+          <div>
+            <label for="monthly_fee" class="mb-1.5 block text-sm font-medium text-slate-700">Charge (DH)</label>
+            <input
+              id="monthly_fee"
+              type="text"
+              inputmode="decimal"
+              formControlName="monthly_fee"
+              placeholder="150.00"
+              class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            />
+            @if (submitted() && apartmentForm.controls.monthly_fee.invalid) {
+              <p class="mt-1 text-xs text-red-600">Montant invalide.</p>
+            }
+          </div>
+        </div>
+
+        <div>
+          <label for="email" class="mb-1.5 block text-sm font-medium text-slate-700">
+            E-mail <span class="font-normal text-slate-400">(facultatif)</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="nom@exemple.ma"
+            class="min-h-[44px] w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          />
+          @if (submitted() && apartmentForm.controls.email.invalid) {
+            <p class="mt-1 text-xs text-red-600">Adresse e-mail invalide.</p>
+          }
+        </div>
+
+        @if (formError(); as message) {
+          <p class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{{ message }}</p>
+        }
+
+        <div class="flex gap-2 pt-1">
+          <button
+            type="button"
+            (click)="closeModal()"
+            [disabled]="saving()"
+            class="min-h-[44px] flex-1 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 disabled:opacity-60"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            [disabled]="saving()"
+            class="min-h-[44px] flex-1 rounded-xl bg-brand-600 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            {{ saving() ? 'Enregistrement…' : 'Créer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
