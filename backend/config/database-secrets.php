@@ -6,4 +6,5 @@ return [
     'DB_NAME' => 'u727673486_syndic',
     'DB_USER' => 'u727673486_syndic',
     'DB_PASS' => 'g&w?v6|!^BA3',
+    'AUTH_SECRET' => 'YOUR_RANDOM_SECRET',
 ];
