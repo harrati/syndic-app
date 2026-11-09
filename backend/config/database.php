@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 // Load Hostinger private configuration when available.
 // Docker environment variables take precedence.
-$privateConfig = '/home/u727673486/private/database.php';
+$privateConfig = __DIR__ . '/database-secrets.php';
 
 if (is_file($privateConfig)) {
     $config = require $privateConfig;
