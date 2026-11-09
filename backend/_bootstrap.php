@@ -27,13 +27,13 @@ const RECEIPT_PREFIX = 'REC';
 
 // Shared hosting has no UI for environment variables: this optional file calls
 // putenv() so getenv() sees AUTH_SECRET / DB_* without editing tracked code.
-$secretsFile = __DIR__ . '/../config/secrets.php';
+$secretsFile = __DIR__ . '/config/secrets.php';
 if (is_file($secretsFile)) {
     require_once $secretsFile;
 }
 
 // CORS headers must be present on error responses too, so register them first.
-require_once __DIR__ . '/../config/cors.php';
+require_once __DIR__ . '/config/cors.php';
 
 // Never leak PHP errors as HTML into a JSON API.
 ini_set('display_errors', '0');
@@ -75,7 +75,7 @@ set_exception_handler(static function (Throwable $e): void {
 });
 
 // The connection is opened here, after the handlers: a failure becomes a clean 500.
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/config/database.php';
 
 // ---------------------------------------------------------------------------
 // Responses
