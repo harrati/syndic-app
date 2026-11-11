@@ -42,13 +42,18 @@ switch (request_action($body)) {
 
     case 'update_building':
         building_update($pdo, $tenantId, $body);
-        break;\n\n    case 'delete_building':
+        break;
+    case 'delete_building':
         building_delete($pdo, $tenantId, $body);
-        break;\n\n    case 'update_apartment':
+        break;
+    case 'update_apartment':
         apartment_update($pdo, $tenantId, $body);
-        break;\n\n    case 'delete_apartment':
+        break;
+    case 'delete_apartment':
         apartment_delete($pdo, $tenantId, $body);
-        break;\n\n    default:\n        json_error(400, 'Action inconnue : create_building, update_building, create_apartment, delete_building ou delete_apartment.');
+        break;
+    default:
+        json_error(400, 'Action inconnue : create_building, update_building, create_apartment, delete_building ou delete_apartment.');
 }
 
 function building_delete(PDO $pdo, string $tenantId, array $body): never
