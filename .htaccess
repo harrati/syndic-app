@@ -1,0 +1,15 @@
+
+Options -Indexes
+
+RewriteEngine On
+
+# Do not intercept PHP API requests
+RewriteRule ^api(/|$) - [L]
+
+# Serve existing files and directories
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Angular SPA fallback
+RewriteRule ^ index.html [L]
