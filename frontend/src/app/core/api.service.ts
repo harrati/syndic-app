@@ -47,6 +47,33 @@ export interface CreateApartmentPayload {
   monthly_fee?: string;
 }
 
+export interface UpdateBuildingPayload {
+  building_id: string;
+  building_code?: string;
+  building_name?: string;
+  address_or_description?: string | null;
+}
+
+export interface DeleteBuildingPayload {
+  building_id: string;
+}
+
+export interface UpdateApartmentPayload {
+  apartment_id: string;
+  building_id?: string;
+  apartment_number?: string;
+  floor?: number;
+  owner_name?: string;
+  resident_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  monthly_fee?: string;
+}
+
+export interface DeleteApartmentPayload {
+  apartment_id: string;
+}
+
 export interface CreatePaymentPayload {
   apartment_id: string;
   amount_received: string;
@@ -91,8 +118,24 @@ export class ApiService {
     return this.post<BuildingResult>('/apartments.php', { action: 'create_building', ...payload });
   }
 
+  updateBuilding(payload: UpdateBuildingPayload): Observable<BuildingResult> {
+    return this.post<BuildingResult>('/apartments.php', { action: 'update_building', ...payload });
+  }
+
+  deleteBuilding(buildingId: string): Observable<BuildingResult> {
+    return this.post<BuildingResult>('/apartments.php', { action: 'delete_building', building_id: buildingId });
+  }
+
   createApartment(payload: CreateApartmentPayload): Observable<ApartmentResult> {
     return this.post<ApartmentResult>('/apartments.php', { action: 'create_apartment', ...payload });
+  }
+
+  updateApartment(payload: UpdateApartmentPayload): Observable<ApartmentResult> {
+    return this.post<ApartmentResult>('/apartments.php', { action: 'update_apartment', ...payload });
+  }
+
+  deleteApartment(apartmentId: string): Observable<ApartmentResult> {
+    return this.post<ApartmentResult>('/apartments.php', { action: 'delete_apartment', apartment_id: apartmentId });
   }
 
   createPayment(payload: CreatePaymentPayload): Observable<PaymentResult> {
@@ -100,23 +143,17 @@ export class ApiService {
   }
 
   getPayments(filters: PaymentFilters = {}): Observable<PaymentsResult> {
-    return this.get<PaymentsResult>(
-      '/payments.php',
-      this.toParams({ year: filters.year, apartment_id: filters.apartment_id, limit: filters.limit }),
-    );
+    return this.get<PaymentsResult>('/payments.php', this.toParams({ year: filters.year, apartment_id: filters.apartment_id, limit: filters.limit }));
   }
 
   getExpenses(filters: ExpenseFilters = {}): Observable<ExpensesResult> {
-    return this.get<ExpensesResult>(
-      '/expenses.php',
-      this.toParams({
-        year: filters.year,
-        month: filters.month,
-        category: filters.category,
-        status: filters.status,
-        limit: filters.limit,
-      }),
-    );
+    return this.get<ExpensesResult>('/expenses.php', this.toParams({
+      year: filters.year,
+      month: filters.month,
+      category: filters.category,
+      status: filters.status,
+      limit: filters.limit,
+    }));
   }
 
   createExpense(payload: CreateExpensePayload): Observable<ExpenseResult> {
@@ -193,4 +230,4 @@ export function apiErrorMessage(error: unknown): string {
   }
 
   return 'Une erreur inattendue est survenue.';
-}
+}

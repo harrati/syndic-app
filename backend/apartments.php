@@ -40,12 +40,38 @@ switch (request_action($body)) {
         apartment_create($pdo, $tenantId, $body);
         break;
 
-    case 'update_apartment':
+    case 'update_building':
+        building_update($pdo, $tenantId, $body);
+        break;\n\n    case 'delete_building':
+        building_delete($pdo, $tenantId, $body);
+        break;\n\n    case 'update_apartment':
         apartment_update($pdo, $tenantId, $body);
-        break;
+        break;\n\n    case 'delete_apartment':
+        apartment_delete($pdo, $tenantId, $body);
+        break;\n\n    default:\n        json_error(400, 'Action inconnue : create_building, update_building, create_apartment, delete_building ou delete_apartment.');
+}
 
-    default:
-        json_error(400, 'Action inconnue : create_building, update_building, create_apartment ou update_apartment.');
+function building_delete(PDO $pdo, string $tenantId, array $body): never
+{
+    $buildingId = field_string($body, 'building_id', 36);
+    $existing = fetch_building($pdo, $tenantId, $buildingId);
+
+    try {
+        $stmt = $pdo->prepare(
+            'DELETE FROM buildings
+              WHERE building_id = :building_id
+                AND tenant_id = :tenant_id'
+        );
+        $stmt->execute([':building_id' => $buildingId, ':tenant_id' => $tenantId]);
+    } catch (PDOException $e) {
+        if ((string) $e->getCode() === '23000') {
+            json_error(409, 'Impossible de supprimer cet immeuble car il contient des appartements actifs.');
+        }
+
+        throw $e;
+    }
+
+    json_ok([], 'Immeuble supprimé.');
 }
 
 // ---------------------------------------------------------------------------
@@ -340,6 +366,29 @@ function apartment_update(PDO $pdo, string $tenantId, array $body): never
     }
 
     json_ok(['apartment' => map_apartment(fetch_apartment($pdo, $tenantId, $apartmentId))], 'Appartement mis à jour.');
+}
+
+function apartment_delete(PDO $pdo, string $tenantId, array $body): never
+{
+    $apartmentId = field_string($body, 'apartment_id', 36);
+    $existing = fetch_apartment($pdo, $tenantId, $apartmentId);
+
+    try {
+        $stmt = $pdo->prepare(
+            'DELETE FROM apartments
+              WHERE apartment_id = :apartment_id
+                AND tenant_id = :tenant_id'
+        );
+        $stmt->execute([':apartment_id' => $apartmentId, ':tenant_id' => $tenantId]);
+    } catch (PDOException $e) {
+        if ((string) $e->getCode() === '23000') {
+            json_error(409, 'Impossible de supprimer cet appartement.');
+        }
+
+        throw $e;
+    }
+
+    json_ok([], 'Appartement supprimé.');
 }
 
 // ---------------------------------------------------------------------------
